@@ -1,0 +1,14 @@
+grafana:
+  adminPassword: change-me-now
+kube-state-metrics:
+  metricLabelsAllowlist:
+    - pods=[team,commit,app]
+prometheus:
+  prometheusSpec:
+    ruleSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+    retention: 10d
+    resources:
+      requests:
+        cpu: 200m
+        memory: 1Gi

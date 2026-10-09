@@ -1,0 +1,18 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: web-scaler
+  namespace: shop
+spec:
+  scaleTargetRef:
+    name: web
+  minReplicaCount: 0
+  maxReplicaCount: 3
+  cooldownPeriod: 120
+  triggers:
+    - type: cron
+      metadata:
+        timezone: America/New_York
+        start: 0 9 * * 1-5
+        end: 0 18 * * 1-5
+        desiredReplicas: "3"

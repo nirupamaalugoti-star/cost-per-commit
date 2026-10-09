@@ -1,0 +1,30 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cost-guardrail
+  namespace: monitoring
+spec:
+  groups:
+    - name: cost
+      rules:
+        # Modeled hourly cost of requested CPU+RAM per team and commit.
+        # Uses OpenCost's node price metrics (list price unless a spot feed is configured).
+        - record: commit:hourly_cost:sum
+          expr: |
+            sum by (label_team, label_commit) (
+              (
+                container_cpu_allocation * scalar(avg(node_cpu_hourly_cost))
+                + (container_memory_allocation_bytes / 1073741824) * scalar(avg(node_ram_hourly_cost))
+              )
+              * on (namespace, pod) group_left (label_team, label_commit)
+              kube_pod_labels{namespace="shop"}
+            )
+        - record: team:hourly_cost:sum
+          expr: sum by (label_team) (commit:hourly_cost:sum)
+        - alert: CostJumpAfterDeploy
+          expr: team:hourly_cost:sum > 1.3 * (team:hourly_cost:sum offset 1h)
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Hourly cost for team {{ $labels.label_team }} is up more than 30% vs 1h ago"
